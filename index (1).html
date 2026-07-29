@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https: data:; connect-src https://enuvxwyftycqsafpmhgy.supabase.co; base-uri 'self'; form-action 'self';">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>MODAKART — Premium T-Shirt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --ink:#14171F;
+    --ink-soft:#1F2430;
+    --tag:#ECE8DE;
+    --tag-dim:#DAD5C6;
+    --mustard:#D9A441;
+    --thread:#B84A3E;
+    --denim:#3C5A73;
+    --ok:#4B7A51;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--tag);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'Space Mono',monospace;}
+  .display{font-family:'Archivo Black',sans-serif; text-transform:uppercase; letter-spacing:0.5px;}
+
+  header{
+    position:sticky; top:0; z-index:40;
+    display:flex; justify-content:space-between; align-items:center; gap:16px;
+    padding:18px 24px;
+    background:var(--ink);
+    border-bottom:1px solid rgba(236,232,222,0.12);
+    flex-wrap:wrap;
+  }
+  .wordmark{font-size:22px; letter-spacing:1px;}
+  .wordmark span{color:var(--mustard);}
+  nav{display:flex; align-items:center; gap:8px;}
+  nav button{
+    background:none; border:none; color:var(--tag); font-family:'Space Mono',monospace;
+    font-size:12px; letter-spacing:1px; text-transform:uppercase; cursor:pointer;
+    padding:8px 12px; border:1px solid rgba(236,232,222,0.25); border-radius:2px;
+  }
+  nav button:hover{border-color:var(--mustard); color:var(--mustard);}
+  .search-box{
+    background:var(--ink-soft); border:1px solid rgba(236,232,222,0.2); border-radius:2px;
+    padding:8px 12px; display:flex; align-items:center; gap:6px;
+  }
+  .search-box input{
+    background:none; border:none; color:var(--tag); font-family:'Space Mono',monospace; font-size:12px;
+    outline:none; width:110px;
+  }
+  .search-box input::placeholder{color:#6b6a5f;}
+
+  main{max-width:1080px; margin:0 auto; padding:32px 24px 80px;}
+  .product-grid{display:grid; grid-template-columns:1.1fr 1fr; gap:48px;}
+  @media(max-width:820px){.product-grid{grid-template-columns:1fr;}}
+
+  .main-image{width:100%; aspect-ratio:4/5; object-fit:cover; border-radius:2px; background:var(--ink-soft); transition:opacity .15s;}
+  .thumbs{display:flex; gap:10px; margin-top:10px;}
+  .thumbs img{
+    width:64px; height:64px; object-fit:cover; border-radius:2px; cursor:pointer;
+    opacity:0.55; border:1px solid transparent; transition:opacity .15s, border-color .15s;
+  }
+  .thumbs img.active{opacity:1; border-color:var(--mustard);}
+
+  .eyebrow{font-family:'Space Mono',monospace; font-size:12px; color:var(--mustard); letter-spacing:2px;}
+  h1{font-size:32px; margin:8px 0 4px; line-height:1.1;}
+  .price{font-family:'Space Mono',monospace; font-size:26px; margin:10px 0 20px;}
+  .price .strike{color:#8a8577; text-decoration:line-through; font-size:16px; margin-left:8px;}
+  .desc{color:#C9C4B4; line-height:1.6; margin-bottom:26px; font-size:14px;}
+
+  .field-label{font-family:'Space Mono',monospace; font-size:11px; letter-spacing:1.5px; color:#C9C4B4; margin-bottom:10px; display:block;}
+
+  .qty-row{display:flex; align-items:center; gap:14px; margin-bottom:6px;}
+  .qty-row button{
+    width:34px; height:34px; background:none; border:1px solid rgba(236,232,222,0.3); color:var(--tag);
+    font-size:16px; cursor:pointer; border-radius:2px;
+  }
+  .qty-row span{font-family:'Space Mono',monospace; font-size:16px; min-width:20px; text-align:center;}
+  .total-line{font-family:'Space Mono',monospace; font-size:14px; color:var(--mustard); margin-bottom:24px;}
+
+  .buy-btn{
+    width:100%; padding:16px; background:var(--mustard); color:var(--ink); border:none;
+    font-family:'Archivo Black',sans-serif; text-transform:uppercase; letter-spacing:1px; font-size:15px;
+    cursor:pointer; border-radius:2px;
+  }
+  .buy-btn:hover{background:#c99636;}
+  .cod-note{margin-top:14px; font-size:12px; color:#8a8577; font-family:'Space Mono',monospace;}
+
+  .overlay{position:fixed; inset:0; background:rgba(20,23,31,0.92); z-index:100; display:none; overflow-y:auto;}
+  .overlay.open{display:block;}
+  .panel{max-width:560px; margin:40px auto; background:var(--tag); color:var(--ink); border-radius:4px; padding:32px; position:relative;}
+  .panel.wide{max-width:920px;}
+  .panel-close{position:absolute; top:16px; right:16px; background:none; border:none; font-size:20px; cursor:pointer; color:var(--ink);}
+  .panel h2{font-family:'Archivo Black',sans-serif; text-transform:uppercase; font-size:20px; margin-top:0;}
+  .panel label{display:block; font-family:'Space Mono',monospace; font-size:11px; letter-spacing:1px; margin:16px 0 6px; color:#5a5647;}
+  .panel input, .panel select{
+    width:100%; padding:11px 12px; border:1px solid #c9c4b0; border-radius:2px; font-family:'Inter',sans-serif; font-size:14px;
+    background:#fff;
+  }
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .summary-box{background:#fff; border:1px dashed #b8b29c; border-radius:2px; padding:14px 16px; margin-top:20px; font-size:13px;}
+  .summary-box div{display:flex; justify-content:space-between; margin:4px 0;}
+  .submit-btn{
+    width:100%; margin-top:22px; padding:14px; background:var(--ink); color:var(--tag); border:none;
+    font-family:'Archivo Black',sans-serif; text-transform:uppercase; letter-spacing:1px; font-size:14px; cursor:pointer; border-radius:2px;
+  }
+  .submit-btn:disabled{opacity:0.5; cursor:not-allowed;}
+  .ghost-btn{
+    background:none; border:1px solid var(--ink); color:var(--ink); padding:10px 14px; border-radius:2px;
+    font-family:'Space Mono',monospace; font-size:12px; cursor:pointer; margin-right:8px; margin-top:10px;
+  }
+  .error-text{color:var(--thread); font-size:12px; margin-top:10px; font-family:'Space Mono',monospace;}
+  .ok-text{color:var(--ok); font-size:12px; margin-top:10px; font-family:'Space Mono',monospace;}
+
+  .tag-card{border:2px dashed var(--ink); border-radius:4px; padding:24px; text-align:center; position:relative; margin-top:10px;}
+  .tag-card::before{content:''; position:absolute; top:-9px; left:50%; transform:translateX(-50%); width:18px; height:18px; background:var(--ink); border-radius:50%;}
+  .tag-status{font-family:'Space Mono',monospace; font-size:11px; letter-spacing:2px; color:var(--ok); text-transform:uppercase;}
+  .tag-code{font-family:'Space Mono',monospace; font-weight:700; font-size:24px; margin:14px 0; letter-spacing:2px; word-break:break-all;}
+  .barcode{height:36px; background:repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 5px); margin:14px 0;}
+  .tag-note{font-size:12px; color:#5a5647; line-height:1.5;}
+
+  .table-scroll{overflow-x:auto; margin-top:14px; background:#ffffff; border-radius:2px;}
+  table.order-table{width:100%; min-width:640px; border-collapse:collapse; font-size:12px; background:#ffffff;}
+  table.order-table th, table.order-table td{border:1px solid #d8d3c1; padding:8px; text-align:left; background:#ffffff; color:#14171F;}
+  table.order-table th{background:#dfd9c6; color:#14171F; font-family:'Space Mono',monospace; text-transform:uppercase; font-size:10px;}
+  table.order-table tr:nth-child(even) td{background:#f7f5ee;}
+  .status-pill{font-family:'Space Mono',monospace; font-size:10px; padding:2px 8px; border-radius:10px; text-transform:uppercase; display:inline-block;}
+  .status-pending{background:#fbe8c6; color:#8a5a10;}
+  .status-cancelled{background:#f5d5d0; color:var(--thread);}
+  .status-shipped, .status-delivered{background:#dcecdd; color:var(--ok);}
+  .delivery-note{background:#fff8e6; border:1px solid #e8d8a6; padding:8px 10px; font-size:11px; margin-top:6px; border-radius:2px;}
+  .tabs{display:flex; gap:8px; margin-bottom:18px;}
+  .tab-btn{background:none; border:1px solid var(--ink); padding:8px 16px; font-family:'Space Mono',monospace; font-size:12px; cursor:pointer; border-radius:2px;}
+  .tab-btn.active{background:var(--ink); color:var(--tag);}
+  .export-row{margin-top:10px;}
+  .admin-update-row{border:1px solid #d8d3c1; padding:12px; margin-top:10px; background:#fff; font-size:12px; border-radius:2px;}
+  .admin-update-row .row2{margin-top:8px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wordmark display">MODA<span>KART</span></div>
+  <nav>
+    <button onclick="openPanel('cancelPanel')">Cancel Order</button>
+    <button onclick="openMyOrders()">My Orders</button>
+    <div class="search-box">
+      <span class="mono" style="font-size:12px;">🔍</span>
+      <input type="text" id="siteSearch" placeholder="Search" onkeydown="if(event.key==='Enter')handleSearch()">
+    </div>
+  </nav>
+</header>
+
+<main>
+  <div class="product-grid">
+    <div>
+      <img id="mainImage" class="main-image" src="https://cdn.phototourl.com/free/2026-07-29-106e751f-9abb-4b50-ad48-04121260640a.jpg" alt="Stainless Steel Vegetable & Fruit Peeler">
+      <div class="thumbs">
+        <img class="active" src="https://cdn.phototourl.com/free/2026-07-29-106e751f-9abb-4b50-ad48-04121260640a.jpg" onclick="setImage(this)">
+        <img src="https://cdn.phototourl.com/free/2026-07-29-fcdac492-b739-4f56-a26b-ae21172d3297.jpg" onclick="setImage(this)">
+        <img src="https://cdn.phototourl.com/free/2026-07-29-c2acd5de-4322-4bef-88ec-9f9081c4360a.jpg" onclick="setImage(this)">
+        <img src="https://cdn.phototourl.com/free/2026-07-29-5ef13118-fb84-40d0-95a0-8ed3236baded.jpg" onclick="setImage(this)">
+      </div>
+    </div>
+
+    <div>
+      <div class="eyebrow">MODAKART / KITCHEN · BUY 1 GET 1 FREE</div>
+      <h1 class="display">Stainless Steel Vegetable &amp; Fruit Peeler (Pack of 2)</h1>
+      <div class="price">₹299 <span class="strike">₹599</span></div>
+      <p class="desc">2-in-1 stainless steel peeler with a sharp julienne-cut blade and a smooth peeling edge — built to glide through potatoes, carrots, cucumbers, apples and more. Comfortable anti-slip steel handle with hanging loop for easy storage. Pack of 2, rust-resistant and dishwasher friendly.</p>
+
+      <span class="field-label">QUANTITY</span>
+      <div class="qty-row">
+        <button onclick="changeQty(-1)">−</button>
+        <span id="qtyVal">1</span>
+        <button onclick="changeQty(1)">+</button>
+      </div>
+      <div class="total-line">Total: ₹<span id="totalVal">299</span></div>
+
+      <button class="buy-btn" onclick="startCheckout()">Buy Now</button>
+      <div class="cod-note">⬤ CASH ON DELIVERY ONLY · NO ONLINE PAYMENT REQUIRED</div>
+    </div>
+  </div>
+</main>
+
+<!-- Checkout Panel -->
+<div class="overlay" id="checkoutPanel">
+  <div class="panel">
+    <button class="panel-close" onclick="closePanel('checkoutPanel')">✕</button>
+    <h2>Checkout</h2>
+    <label>Full name</label>
+    <input type="text" id="c_name" placeholder="Your name">
+    <div class="row2">
+      <div><label>Phone number</label><input type="tel" id="c_phone" placeholder="10-digit number" maxlength="10"></div>
+      <div><label>Email</label><input type="email" id="c_email" placeholder="you@email.com"></div>
+    </div>
+    <label>Street address</label>
+    <input type="text" id="c_street" placeholder="House no, street, area">
+    <div class="row2">
+      <div><label>City</label><input type="text" id="c_city"></div>
+      <div><label>State</label><input type="text" id="c_state"></div>
+    </div>
+    <label>Pincode</label>
+    <input type="text" id="c_pincode" maxlength="6">
+    <div class="summary-box" id="orderSummary"></div>
+    <div id="checkoutError" class="error-text"></div>
+    <button class="submit-btn" id="placeOrderBtn" onclick="placeOrder()">Place Order — Cash on Delivery</button>
+  </div>
+</div>
+
+<!-- Confirmation Panel -->
+<div class="overlay" id="confirmPanel">
+  <div class="panel">
+    <button class="panel-close" onclick="closePanel('confirmPanel')">✕</button>
+    <h2>Order Confirmed</h2>
+    <div class="tag-card">
+      <div class="tag-status">● Pending · Cash on Delivery</div>
+      <div class="tag-code mono" id="confirmCode"></div>
+      <div class="barcode"></div>
+      <div class="tag-note">Save this code. You'll need it to cancel your order.<br>You can place another order anytime — each order gets its own unique code.<br>There is no return option once an order is placed.</div>
+      <button class="ghost-btn" style="margin-top:14px;" onclick="downloadCodeCard()">⬇ Download Code Card</button>
+    </div>
+  </div>
+</div>
+
+<!-- Cancel Order Panel -->
+<div class="overlay" id="cancelPanel">
+  <div class="panel">
+    <button class="panel-close" onclick="closePanel('cancelPanel')">✕</button>
+    <h2>Cancel Order</h2>
+    <label>Enter your order code</label>
+    <input type="text" id="cancel_code" placeholder="e.g. 9999999999AKAS1234" style="text-transform:uppercase;">
+    <div id="cancelMsg" class="error-text"></div>
+    <button class="submit-btn" onclick="submitCancel()">Cancel Order</button>
+    <p style="font-size:11px; color:#8a8577; margin-top:16px;">Only pending orders can be cancelled. Shipped or delivered orders cannot be cancelled or returned.</p>
+  </div>
+</div>
+
+<!-- My Orders Panel -->
+<div class="overlay" id="myOrdersPanel">
+  <div class="panel wide">
+    <button class="panel-close" onclick="closePanel('myOrdersPanel')">✕</button>
+    <h2>My Orders</h2>
+    <label>Enter your mobile number</label>
+    <input type="tel" id="my_phone" placeholder="10-digit number" maxlength="10">
+    <div id="myOrdersMsg" class="error-text"></div>
+    <button class="submit-btn" onclick="loadMyOrders()">View My Orders</button>
+    <div id="myOrdersList"></div>
+  </div>
+</div>
+
+<!-- Admin Panel (hidden - accessed via search "BINA") -->
+<div class="overlay" id="adminPanel">
+  <div class="panel wide">
+    <button class="panel-close" onclick="closePanel('adminPanel')">✕</button>
+    <h2>BINA — Admin</h2>
+    <div id="adminGate">
+      <label>Admin PIN</label>
+      <input type="password" id="admin_pin" placeholder="Enter PIN">
+      <div id="adminError" class="error-text"></div>
+      <button class="submit-btn" onclick="loadAdminOrders()">Unlock</button>
+    </div>
+    <div id="adminContent" style="display:none;">
+      <div class="tabs">
+        <button class="tab-btn active" id="tabOrdersBtn" onclick="switchAdminTab('orders')">Section 1 · Orders</button>
+        <button class="tab-btn" id="tabStatusBtn" onclick="switchAdminTab('status')">Section 2 · Status Update</button>
+      </div>
+      <div id="adminOrdersSection"></div>
+      <div id="adminStatusSection" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const supabaseClient = window.supabase.createClient(
+    "https://enuvxwyftycqsafpmhgy.supabase.co",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVudXZ4d3lmdHljcXNhZnBtaGd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyMDA2MTMsImV4cCI6MjEwMDc3NjYxM30.3Doj5Dt-xPGpyMsqXicMJ5b65Tlmu0X0tM10NHIok7A"
+  );
+
+  const PRODUCT = { id: "modakart-peeler-001", name: "Stainless Steel Vegetable & Fruit Peeler (Pack of 2)", price: 299 };
+  const SUPPORT_EMAIL = "modakart.cancel@gmail.com";
+
+  // Security: escape any database-sourced text before inserting into innerHTML,
+  // so a malicious value entered in a form field (name, address, etc.) can never
+  // execute as HTML/JS in the admin panel or My Orders view (stored XSS protection).
+  function escapeHtml(value){
+    if(value === null || value === undefined) return '';
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+  let qty = 1;
+  let adminPin = '';
+  let currentAdminOrders = [];
+  let lastOrder = null;
+
+  function setImage(el){
+    document.getElementById('mainImage').src = el.src.replace('w=200','w=800');
+    document.querySelectorAll('.thumbs img').forEach(i => i.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  function changeQty(delta){
+    qty = Math.max(1, qty + delta);
+    document.getElementById('qtyVal').innerText = qty;
+    document.getElementById('totalVal').innerText = PRODUCT.price * qty;
+  }
+
+  function openPanel(id){ document.getElementById(id).classList.add('open'); }
+  function closePanel(id){ document.getElementById(id).classList.remove('open'); }
+
+  function handleSearch(){
+    const val = document.getElementById('siteSearch').value.trim().toUpperCase();
+    if(val === 'BINA'){
+      document.getElementById('siteSearch').value = '';
+      openAdmin();
+    }
+  }
+
+  function startCheckout(){
+    document.getElementById('orderSummary').innerHTML =
+      '<div><span>' + escapeHtml(PRODUCT.name) + ' × ' + qty + '</span><span>₹' + (PRODUCT.price*qty) + '</span></div>' +
+      '<div><span>Payment</span><span>Cash on Delivery</span></div>' +
+      '<div><strong>Total</strong><strong>₹' + (PRODUCT.price*qty) + '</strong></div>';
+    document.getElementById('checkoutError').innerText = '';
+    openPanel('checkoutPanel');
+  }
+
+  async function placeOrder(){
+    const name = document.getElementById('c_name').value.trim();
+    const phone = document.getElementById('c_phone').value.trim();
+    const email = document.getElementById('c_email').value.trim();
+    const street = document.getElementById('c_street').value.trim();
+    const city = document.getElementById('c_city').value.trim();
+    const state = document.getElementById('c_state').value.trim();
+    const pincode = document.getElementById('c_pincode').value.trim();
+    const errEl = document.getElementById('checkoutError');
+
+    if(!name || !phone || !email || !street || !city || !state || !pincode){
+      errEl.innerText = 'Please fill in all fields.'; return;
+    }
+    if(!/^\d{10}$/.test(phone)){ errEl.innerText = 'Enter a valid 10-digit phone number.'; return; }
+    if(!/^\S+@\S+\.\S+$/.test(email)){ errEl.innerText = 'Enter a valid email address.'; return; }
+    if(!/^\d{6}$/.test(pincode)){ errEl.innerText = 'Enter a valid 6-digit pincode.'; return; }
+
+    errEl.innerText = '';
+    const btn = document.getElementById('placeOrderBtn');
+    btn.disabled = true; btn.innerText = 'Placing order...';
+
+    const { data, error } = await supabaseClient.rpc('place_order', {
+      p_product_id: PRODUCT.id,
+      p_product_name: PRODUCT.name,
+      p_size: 'Standard',
+      p_quantity: qty,
+      p_price: PRODUCT.price,
+      p_customer_name: name,
+      p_phone: phone,
+      p_email: email,
+      p_street: street,
+      p_city: city,
+      p_state: state,
+      p_pincode: pincode
+    });
+
+    btn.disabled = false; btn.innerText = 'Place Order — Cash on Delivery';
+
+    if(error){
+      errEl.innerText = 'Something went wrong: ' + error.message;
+      return;
+    }
+
+    document.getElementById('confirmCode').innerText = data;
+    lastOrder = {
+      code: data,
+      product: PRODUCT.name,
+      qty: qty,
+      total: PRODUCT.price * qty
+    };
+    closePanel('checkoutPanel');
+    openPanel('confirmPanel');
+  }
+
+  function downloadCodeCard(){
+    if(!lastOrder){ return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: [100, 150] });
+
+    doc.setFont('courier', 'bold');
+    doc.setFontSize(14);
+    doc.text('MODAKART', 10, 15);
+    doc.setFontSize(9);
+    doc.text('ORDER CONFIRMED - CASH ON DELIVERY', 10, 22);
+    doc.setLineWidth(0.3);
+    doc.line(10, 26, 90, 26);
+
+    doc.setFontSize(10);
+    doc.text('ORDER CODE', 10, 38);
+    doc.setFontSize(16);
+    doc.text(lastOrder.code, 10, 47);
+
+    doc.setFontSize(9);
+    doc.text('Product: ' + lastOrder.product, 10, 62, { maxWidth: 80 });
+    doc.text('Quantity: ' + lastOrder.qty, 10, 78);
+    doc.text('Total: Rs ' + lastOrder.total, 10, 85);
+    doc.text('Status: Pending', 10, 92);
+
+    doc.setLineWidth(0.2);
+    for(let x = 10; x < 90; x += 2.4){
+      doc.line(x, 100, x, 108);
+    }
+
+    doc.setFontSize(8);
+    const note = doc.splitTextToSize(
+      'Keep this code safe. You will need it to cancel this order in the future via the "Cancel Order" option on the website.',
+      80
+    );
+    doc.text(note, 10, 118);
+
+    doc.save('modakart-order-' + lastOrder.code + '.pdf');
+  }
+
+  async function submitCancel(){
+    const codeInput = document.getElementById('cancel_code');
+    const code = codeInput.value.trim().toUpperCase();
+    const msgEl = document.getElementById('cancelMsg');
+    if(!code){ msgEl.className='error-text'; msgEl.innerText = 'Enter your order code.'; return; }
+
+    const { data, error } = await supabaseClient.rpc('cancel_order', { code });
+
+    if(error){ msgEl.className='error-text'; msgEl.innerText = 'Error: ' + error.message; return; }
+
+    if(data === 'success'){
+      msgEl.className = 'ok-text';
+      msgEl.innerText = 'Order cancelled successfully. Opening a draft cancellation email...';
+      const subject = encodeURIComponent('Order Cancellation - ' + code);
+      const body = encodeURIComponent(
+        'Hello,\n\nI would like to confirm the cancellation of my order.\n\nOrder Code: ' + code +
+        '\n\nThis order has been marked as cancelled on the website.\n\nRegards'
+      );
+      window.location.href = 'mailto:' + SUPPORT_EMAIL + '?subject=' + subject + '&body=' + body;
+    } else if(data === 'invalid_code'){
+      msgEl.className = 'error-text';
+      msgEl.innerText = 'No order found with this code.';
+    } else if(data === 'cannot_cancel'){
+      msgEl.className = 'error-text';
+      msgEl.innerText = 'This order can no longer be cancelled (already shipped, delivered, or cancelled).';
+    }
+  }
+
+  function openMyOrders(){
+    document.getElementById('my_phone').value = '';
+    document.getElementById('myOrdersMsg').innerText = '';
+    document.getElementById('myOrdersList').innerHTML = '';
+    openPanel('myOrdersPanel');
+  }
+
+  async function loadMyOrders(){
+    const phone = document.getElementById('my_phone').value.trim();
+    const msgEl = document.getElementById('myOrdersMsg');
+    if(!/^\d{10}$/.test(phone)){ msgEl.innerText = 'Enter a valid 10-digit mobile number.'; return; }
+    msgEl.innerText = '';
+
+    const { data, error } = await supabaseClient.rpc('get_my_orders', { p_phone: phone });
+    if(error){ msgEl.innerText = 'Error: ' + error.message; return; }
+
+    const listEl = document.getElementById('myOrdersList');
+    if(!data || data.length === 0){
+      listEl.innerHTML = '<p style="margin-top:14px;">No orders found for this number.</p>';
+      return;
+    }
+
+    let rows = '';
+    data.forEach((o, idx) => {
+      const sl = idx + 1; // 1 = most recent, already sorted desc
+      rows += '<tr>' +
+        '<td>' + sl + '</td>' +
+        '<td>' + escapeHtml(o.product_name) + '</td>' +
+        '<td>₹' + Number(o.price) + '</td>' +
+        '<td>' + Number(o.quantity) + '</td>' +
+        '<td class="mono">' + escapeHtml(o.order_code) + '</td>' +
+        '<td>' + new Date(o.created_at).toLocaleString() + '</td>' +
+        '<td><span class="status-pill status-' + escapeHtml(o.status) + '">' + escapeHtml(o.status) + '</span>' +
+        (o.expected_delivery ? '<div class="delivery-note">📦 ' + escapeHtml(o.expected_delivery) + '</div>' : '') +
+        (o.delivery_date ? '<div class="delivery-note">📅 Expected: ' + escapeHtml(o.delivery_date) + '</div>' : '') +
+        '</td>' +
+      '</tr>';
+    });
+
+    listEl.innerHTML =
+      '<div class="table-scroll"><table class="order-table"><thead><tr>' +
+      '<th>Sl No</th><th>Product</th><th>Price</th><th>Qty</th><th>Code</th><th>Date/Time</th><th>Status</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+  }
+
+  let adminPinFailCount = 0;
+  let adminLockedUntil = 0;
+
+  function openAdmin(){
+    document.getElementById('adminGate').style.display = 'block';
+    document.getElementById('adminContent').style.display = 'none';
+    document.getElementById('adminError').innerText = '';
+    document.getElementById('admin_pin').value = '';
+    openPanel('adminPanel');
+  }
+
+  async function loadAdminOrders(){
+    const errEl = document.getElementById('adminError');
+
+    if(Date.now() < adminLockedUntil){
+      const secsLeft = Math.ceil((adminLockedUntil - Date.now())/1000);
+      errEl.innerText = 'Too many attempts. Try again in ' + secsLeft + 's.';
+      return;
+    }
+
+    const pin = document.getElementById('admin_pin').value.trim();
+    const { data, error } = await supabaseClient.rpc('admin_get_orders', { pin });
+
+    if(error){
+      adminPinFailCount++;
+      if(adminPinFailCount >= 5){
+        adminLockedUntil = Date.now() + 60000; // 60s lockout after 5 wrong attempts
+        adminPinFailCount = 0;
+        errEl.innerText = 'Too many attempts. Try again in 60s.';
+      } else {
+        errEl.innerText = 'Incorrect PIN.';
+      }
+      return;
+    }
+
+    adminPinFailCount = 0;
+    adminPin = pin;
+    currentAdminOrders = data || [];
+    document.getElementById('adminGate').style.display = 'none';
+    document.getElementById('adminContent').style.display = 'block';
+    renderAdminOrdersSection();
+    renderAdminStatusSection();
+    switchAdminTab('orders');
+  }
+
+  function switchAdminTab(tab){
+    document.getElementById('adminOrdersSection').style.display = tab === 'orders' ? 'block' : 'none';
+    document.getElementById('adminStatusSection').style.display = tab === 'status' ? 'block' : 'none';
+    document.getElementById('tabOrdersBtn').classList.toggle('active', tab === 'orders');
+    document.getElementById('tabStatusBtn').classList.toggle('active', tab === 'status');
+  }
+
+  function renderAdminOrdersSection(){
+    const el = document.getElementById('adminOrdersSection');
+    if(currentAdminOrders.length === 0){
+      el.innerHTML = '<p>No orders yet.</p>';
+      return;
+    }
+    let rows = '';
+    currentAdminOrders.forEach((o, idx) => {
+      rows += '<tr>' +
+        '<td>' + (idx+1) + '</td>' +
+        '<td>' + escapeHtml(o.product_name) + '</td>' +
+        '<td>' + escapeHtml(o.phone) + '</td>' +
+        '<td>' + escapeHtml(o.address_street) + ', ' + escapeHtml(o.address_city) + ', ' + escapeHtml(o.address_state) + ' - ' + escapeHtml(o.address_pincode) + '</td>' +
+        '<td>₹' + Number(o.total_amount) + '</td>' +
+        '<td>' + Number(o.quantity) + '</td>' +
+        '<td class="mono">' + escapeHtml(o.order_code) + '</td>' +
+        '<td>' + new Date(o.created_at).toLocaleString() + '</td>' +
+        '<td>' + (o.delivery_date ? escapeHtml(o.delivery_date) : '—') + '</td>' +
+        '<td><span class="status-pill status-' + escapeHtml(o.status) + '">' + escapeHtml(o.status) + '</span></td>' +
+      '</tr>';
+    });
+    el.innerHTML =
+      '<p class="mono" style="font-size:12px;">' + currentAdminOrders.length + ' total order(s)</p>' +
+      '<div class="export-row">' +
+        '<button class="ghost-btn" onclick="exportPDF()">⬇ Download PDF</button>' +
+        '<button class="ghost-btn" onclick="exportExcel()">⬇ Download Excel</button>' +
+      '</div>' +
+      '<div class="table-scroll"><table class="order-table"><thead><tr>' +
+      '<th>Sl No</th><th>Product</th><th>Mobile</th><th>Address</th><th>Price</th><th>Qty</th><th>Code</th><th>Date/Time</th><th>Delivery Date</th><th>Status</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+  }
+
+  function renderAdminStatusSection(){
+    const el = document.getElementById('adminStatusSection');
+    if(currentAdminOrders.length === 0){
+      el.innerHTML = '<p>No orders yet.</p>';
+      return;
+    }
+    let rows = '';
+    currentAdminOrders.forEach((o, idx) => {
+      rows += '<div class="admin-update-row">' +
+        '<strong class="mono">' + escapeHtml(o.order_code) + '</strong> — ' + escapeHtml(o.phone) + ' — ' +
+        escapeHtml(o.address_street) + ', ' + escapeHtml(o.address_city) + ', ' + escapeHtml(o.address_state) + ' - ' + escapeHtml(o.address_pincode) +
+        ' — ₹' + Number(o.total_amount) +
+        '<div class="row2">' +
+          '<div><label style="margin:8px 0 4px;">Status</label>' +
+          '<select id="status_' + idx + '">' +
+            '<option value="pending"' + (o.status==='pending'?' selected':'') + '>Pending</option>' +
+            '<option value="shipped"' + (o.status==='shipped'?' selected':'') + '>Shipped</option>' +
+            '<option value="delivered"' + (o.status==='delivered'?' selected':'') + '>Delivered</option>' +
+            '<option value="cancelled"' + (o.status==='cancelled'?' selected':'') + '>Cancelled</option>' +
+          '</select></div>' +
+          '<div><label style="margin:8px 0 4px;">Delivery message (buyer sees this)</label>' +
+          '<input type="text" id="delivery_' + idx + '" value="' + escapeHtml(o.expected_delivery || '') + '" placeholder="e.g. Arriving by 2 Aug"></div>' +
+        '</div>' +
+        '<div class="row2">' +
+          '<div><label style="margin:8px 0 4px;">Date of delivery</label>' +
+          '<input type="date" id="deliverydate_' + idx + '" value="' + escapeHtml(o.delivery_date || '') + '"></div>' +
+          '<div><label style="margin:8px 0 4px; visibility:hidden;">.</label>' +
+          '<span style="font-size:11px; color:#5a5647;">Order auto-marks "Delivered" once this date arrives (skipped if cancelled).</span></div>' +
+        '</div>' +
+        '<button class="ghost-btn" style="margin-top:10px;" onclick="saveAdminUpdate(' + idx + ')">Save</button>' +
+        '<span id="saveMsg_' + idx + '" class="mono" style="font-size:11px; margin-left:8px;"></span>' +
+      '</div>';
+    });
+    el.innerHTML = rows;
+  }
+
+  async function saveAdminUpdate(idx){
+    const o = currentAdminOrders[idx];
+    const status = document.getElementById('status_' + idx).value;
+    const delivery = document.getElementById('delivery_' + idx).value.trim();
+    const deliveryDate = document.getElementById('deliverydate_' + idx).value || null;
+    const msgEl = document.getElementById('saveMsg_' + idx);
+
+    const { data, error } = await supabaseClient.rpc('admin_update_order', {
+      pin: adminPin,
+      p_order_code: o.order_code,
+      p_status: status,
+      p_note: null,
+      p_delivery: delivery,
+      p_delivery_date: deliveryDate
+    });
+
+    if(error){ msgEl.style.color = 'var(--thread)'; msgEl.innerText = 'Error saving.'; return; }
+    msgEl.style.color = 'var(--ok)';
+    msgEl.innerText = 'Saved ✓';
+    currentAdminOrders[idx].status = status;
+    currentAdminOrders[idx].expected_delivery = delivery;
+    currentAdminOrders[idx].delivery_date = deliveryDate;
+    renderAdminOrdersSection();
+  }
+
+  function exportPDF(){
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFontSize(14);
+    doc.text('Modakart - Orders', 14, 15);
+    const rows = currentAdminOrders.map((o, idx) => [
+      idx+1, o.product_name, o.phone,
+      o.address_street + ', ' + o.address_city + ', ' + o.address_state + ' - ' + o.address_pincode,
+      '₹' + o.total_amount, o.quantity, o.order_code,
+      new Date(o.created_at).toLocaleString(), o.delivery_date || '—', o.status
+    ]);
+    doc.autoTable({
+      startY: 22,
+      head: [['Sl No','Product','Mobile','Address','Price','Qty','Code','Date/Time','Delivery Date','Status']],
+      body: rows,
+      styles: { fontSize: 7 }
+    });
+    doc.save('modakart-orders.pdf');
+  }
+
+  function exportExcel(){
+    const rows = currentAdminOrders.map((o, idx) => ({
+      'Sl No': idx+1,
+      'Product': o.product_name,
+      'Mobile': o.phone,
+      'Address': o.address_street + ', ' + o.address_city + ', ' + o.address_state + ' - ' + o.address_pincode,
+      'Price': o.total_amount,
+      'Qty': o.quantity,
+      'Code': o.order_code,
+      'Date/Time': new Date(o.created_at).toLocaleString(),
+      'Delivery Date': o.delivery_date || '',
+      'Status': o.status
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Orders');
+    XLSX.writeFile(wb, 'modakart-orders.xlsx');
+  }
+
+  window.setImage = setImage;
+  window.changeQty = changeQty;
+  window.openPanel = openPanel;
+  window.closePanel = closePanel;
+  window.handleSearch = handleSearch;
+  window.startCheckout = startCheckout;
+  window.placeOrder = placeOrder;
+  window.submitCancel = submitCancel;
+  window.downloadCodeCard = downloadCodeCard;
+  window.openMyOrders = openMyOrders;
+  window.loadMyOrders = loadMyOrders;
+  window.openAdmin = openAdmin;
+  window.loadAdminOrders = loadAdminOrders;
+  window.switchAdminTab = switchAdminTab;
+  window.saveAdminUpdate = saveAdminUpdate;
+  window.exportPDF = exportPDF;
+  window.exportExcel = exportExcel;
+</script>
+
+</body>
+</html>
